@@ -321,7 +321,7 @@ public class EraserView extends View {
                             toY((mTouchY + mLastTouchY) / 2));
                     path = GraffitiPath.toPath(mPen, mShape, mPaintSize, mColor.copy(), mCurrPath, null);
                     draw(mBitmapCanvas, path, false); // 保存到图片中
-                    mIsPainting = false;  // 设置为false,将最后一笔保存在图片中,然后在ondraw中不去绘制 
+                    mIsPainting = false;  // 设置为false,将最后一笔保存在图片中,然后在ondraw中不去绘制
                 }
 
                 invalidate();
@@ -422,7 +422,7 @@ public class EraserView extends View {
         mCentreTranY = (getHeight() - mPrivateHeight) / 2f;
 
         initCanvas();
-        resetMatrix();
+        setMatrix();
 
         invalidate();
     }
@@ -608,7 +608,7 @@ public class EraserView extends View {
         mBitmapCanvas = new Canvas(mGraffitiBitmap);
     }
 
-    private void resetMatrix() {
+    private void setMatrix() {
         this.mShaderMatrix.set(null);
         this.mBitmapShader.setLocalMatrix(this.mShaderMatrix);
 
@@ -670,7 +670,7 @@ public class EraserView extends View {
             }
         }
         if (changed) {
-            resetMatrix();
+            setMatrix();
         }
     }
 
@@ -748,7 +748,6 @@ public class EraserView extends View {
     public void setScale(float scale) {
         this.mScale = scale;
         judgePosition();
-        resetMatrix();
         invalidate();
     }
 
@@ -766,7 +765,6 @@ public class EraserView extends View {
             throw new RuntimeException("Pen can't be null");
         }
         mPen = pen;
-        resetMatrix();
         invalidate();
     }
 
@@ -779,7 +777,6 @@ public class EraserView extends View {
         mTransX = transX;
         mTransY = transY;
         judgePosition();
-        resetMatrix();
         invalidate();
     }
 
