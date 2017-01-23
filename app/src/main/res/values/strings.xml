@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">EraserDemo</string>
+
+    <string name="select_image">选图</string>
+    <string name="write">书写</string>
+    <string name="eraser">橡皮</string>
+</resources>
