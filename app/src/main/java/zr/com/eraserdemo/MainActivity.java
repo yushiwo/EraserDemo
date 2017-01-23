@@ -29,14 +29,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     /** 原图的bitmap对象 */
     private Bitmap mBitmap;
 
+    /** 书写 */
     private Button mWriteButton;
+    /** 橡皮擦 */
     private Button mEraserButton;
+    /** 到本地获取一张图片 */
     private Button mGetImageButton;
+    /** 移动图片 */
+    private Button mMoveButton;
 
+    /** 涂鸦板view容器 */
     private FrameLayout mViewContainer;
-
+    /** 涂鸦板view */
     private EraserView mEraserView;
-
+    /** 当前已经选择的图片列表 */
     ArrayList<String> mCurrentImageList = new ArrayList<>();
 
     @Override
@@ -53,6 +59,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mWriteButton = (Button)findViewById(R.id.btn_write);
         mEraserButton = (Button)findViewById(R.id.btn_eraser);
         mGetImageButton = (Button)findViewById(R.id.btn_get_image);
+        mMoveButton = (Button)findViewById(R.id.btn_move);
         mViewContainer = (FrameLayout)findViewById(R.id.layout_view_container);
     }
 
@@ -60,6 +67,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mWriteButton.setOnClickListener(this);
         mEraserButton.setOnClickListener(this);
         mGetImageButton.setOnClickListener(this);
+        mMoveButton.setOnClickListener(this);
     }
 
     @Override
@@ -77,6 +85,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
+    /**
+     * 取列表中第一张图进行涂鸦
+     * @param newFiles
+     */
     private void updateUI(ArrayList<String> newFiles) {
         mImagePath = newFiles.get(0).toString();
 
@@ -87,16 +99,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             public void onSaved(Bitmap bitmap, Bitmap bitmapEraser) {
 
             }
-
-            @Override
-            public void onError(int i, String msg) {
-
-            }
-
-            @Override
-            public void onReady() {
-
-            }
         });
 
         mViewContainer.addView(mEraserView, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
@@ -105,15 +107,23 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onClick(View view) {
         switch (view.getId()){
-            case R.id.btn_write:
+            case R.id.btn_write:  // 书写
+                mEraserView.setMoving(false);
                 mEraserView.setPen(Pen.HAND);
+                mEraserView.setPaintSize(10);
                 break;
 
-            case R.id.btn_eraser:
+            case R.id.btn_eraser: // 橡皮擦
+                mEraserView.setMoving(false);
                 mEraserView.setPen(Pen.ERASER);
+                mEraserView.setPaintSize(30);
                 break;
 
-            case R.id.btn_get_image:
+            case R.id.btn_move:  // 移动
+                mEraserView.setMoving(true);
+                break;
+
+            case R.id.btn_get_image: // 选取图片
                 ImageSelector.getInstance().launchSelector(this, mCurrentImageList);
                 break;
         }

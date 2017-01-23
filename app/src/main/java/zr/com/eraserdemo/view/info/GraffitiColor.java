@@ -9,7 +9,7 @@ import android.graphics.Shader;
 /**
  * @author hzzhengrui
  * @Date 17/1/17
- * @Description 涂鸦底色
+ * @Description 涂鸦底色,颜色 or 图片
  */
 public class GraffitiColor {
     public enum Type {

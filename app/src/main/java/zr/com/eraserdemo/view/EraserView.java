@@ -53,9 +53,11 @@ public class EraserView extends View {
 
     /** 用于涂鸦的图片上 */
     private BitmapShader mBitmapShader;
+    /** 涂鸦的画布 */
     private BitmapShader mBitmapShader4C;
     /** 橡皮擦底图(一般都是用于涂鸦的原图) */
     private BitmapShader mBitmapShaderEraser;
+    /** 橡皮擦的画布 */
     private BitmapShader mBitmapShaderEraser4C;
     /** 当前手写的路径,只记录一笔(相对于图片参考系的路径) */
     private Path mCurrPath;
@@ -64,7 +66,7 @@ public class EraserView extends View {
     /** 当前手写的路径,貌似也是记录一笔(仅单击时也能涂鸦) */
     private Path mTempPath;
 
-
+    /** 画笔 */
     private Paint mPaint;
     /** 触摸模式，用于判断单点或多点触摸 */
     private int mTouchMode;
@@ -86,12 +88,15 @@ public class EraserView extends View {
     /** 橡皮擦底图是否调整大小，如果可以则调整到跟当前涂鸦图片一样的大小 */
     private boolean mEraserImageIsResizeable;
 
-
+    /** 笔的类型:手写 or 橡皮擦 */
     private Pen mPen;
+    /** 绘制方式 */
     private Shape mShape;
 
     private float mTouchDownX, mTouchDownY, mLastTouchX, mLastTouchY, mTouchX, mTouchY;
-    private Matrix mShaderMatrix, mShaderMatrix4C, mMatrixTemp;
+    private Matrix mShaderMatrix;
+    private Matrix mShaderMatrix4C;
+    private Matrix mMatrixTemp;
 
 
     public EraserView(Context context, Bitmap bitmap, GraffitiListener listener) {
@@ -108,7 +113,6 @@ public class EraserView extends View {
      */
     public EraserView(Context context, Bitmap bitmap, String eraser, boolean eraserImageIsResizeable, GraffitiListener listener) {
         super(context);
-
 
         // 关闭硬件加速，因为bitmap的Canvas不支持硬件加速
         if (Build.VERSION.SDK_INT >= 11) {
@@ -154,6 +158,7 @@ public class EraserView extends View {
         this.mBitmapShader = new BitmapShader(this.mBitmap, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
         this.mBitmapShader4C = new BitmapShader(this.mBitmap, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
 
+        // 若指定橡皮擦底图,则使用之;否则底图和原图为同一张
         if (mBitmapEraser != null) {
             this.mBitmapShaderEraser = new BitmapShader(this.mBitmapEraser, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
             this.mBitmapShaderEraser4C = new BitmapShader(this.mBitmapEraser, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
@@ -316,7 +321,7 @@ public class EraserView extends View {
                             toY((mTouchY + mLastTouchY) / 2));
                     path = GraffitiPath.toPath(mPen, mShape, mPaintSize, mColor.copy(), mCurrPath, null);
                     draw(mBitmapCanvas, path, false); // 保存到图片中
-                    mIsPainting = false;
+                    mIsPainting = false;  // 设置为false,将最后一笔保存在图片中,然后在ondraw中不去绘制 
                 }
 
                 invalidate();
@@ -380,8 +385,6 @@ public class EraserView extends View {
                 return true;
             case MotionEvent.ACTION_POINTER_UP:
                 mTouchMode -= 1;
-
-//                invalidate();
                 return true;
             case MotionEvent.ACTION_POINTER_DOWN:
                 mTouchMode += 1;
@@ -393,8 +396,6 @@ public class EraserView extends View {
                 mToucheCentreXOnGraffiti = toX(mTouchCentreX);
                 mToucheCentreYOnGraffiti = toY(mTouchCentreY);
                 mIsBusy = true; // 标志位多点触摸
-
-//                invalidate();
                 return true;
         }
         return super.onTouchEvent(event);
@@ -432,7 +433,8 @@ public class EraserView extends View {
             return;
         }
         // canvas增加抗锯齿效果
-        canvas.setDrawFilter(new PaintFlagsDrawFilter(0, Paint.ANTI_ALIAS_FLAG|Paint.FILTER_BITMAP_FLAG));
+//        canvas.setDrawFilter(new PaintFlagsDrawFilter(0, Paint.ANTI_ALIAS_FLAG|Paint.FILTER_BITMAP_FLAG));
+
         canvas.save();
         doDraw(canvas);
         canvas.restore();
@@ -463,7 +465,6 @@ public class EraserView extends View {
         // 最新的一笔,先画在画布上,提笔的时候保存为新的mGraffitiBitmap
         if (mIsPainting) {  //画在view的画布上
             Path path;
-            float span = 0;
             // 为了仅点击时也能出现绘图，必须移动path
             if (mTouchDownX == mTouchX && mTouchDownY == mTouchY && mTouchDownX == mLastTouchX && mTouchDownY == mLastTouchY) {
                 mTempPath.reset();
@@ -474,14 +475,12 @@ public class EraserView extends View {
                         toX4C((mTouchX + mLastTouchX + VALUE) / 2),
                         toY4C((mTouchY + mLastTouchY + VALUE) / 2));
                 path = mTempPath;
-                span = VALUE;
             } else {  // 是一个完整的笔画,则直接绘制,不需要偏移
                 path = mCanvasPath;
-                span = 0;
             }
             // 画触摸的路径
             mPaint.setStrokeWidth(mPaintSize);
-            if (mShape == Shape.HAND_WRITE) { // 手写
+            if (mShape == Shape.HAND_WRITE) { // 手写,绘制到画布上,isCanvas为true
                 draw(canvas, mPen, mPaint, path, null, true, mColor);
             }
         }
@@ -500,22 +499,22 @@ public class EraserView extends View {
      */
     private void draw(Canvas canvas, Pen pen, Paint paint, Path path, Matrix matrix, boolean is4Canvas, GraffitiColor color) {
         resetPaint(pen, paint, is4Canvas, matrix, color);
-
         paint.setStyle(Paint.Style.STROKE);
         canvas.drawPath(path, paint);
-
     }
 
 
     /**
-     * 绘制路径到图片上
+     * 绘制路径到图片上(每笔抬起的时候,将绘制路径和底部一起绘制保存)
      * @param canvas
      * @param path
      * @param is4Canvas
      */
     private void draw(Canvas canvas, GraffitiPath path, boolean is4Canvas) {
         mPaint.setStrokeWidth(path.mStrokeWidth);
-        if (path.mShape == Shape.HAND_WRITE) { // 手写
+        mPaint.setAntiAlias(true);
+        mPaint.setFilterBitmap(true);
+        if (path.mShape == Shape.HAND_WRITE) { // 手写,绘制到图片上,isCanvas为false
             draw(canvas, path.mPen, mPaint, path.mPath, path.mMatrix, is4Canvas, path.mColor);
         }
     }
@@ -532,18 +531,18 @@ public class EraserView extends View {
         switch (pen) { // 设置画笔
             case HAND:
                 paint.setShader(null);
-                if (is4Canvas) {
+                if (is4Canvas) {  // 绘制到画布上
                     color.initColor(paint, mShaderMatrix4C);
-                } else {
+                } else { // 绘制到图片中
                     color.initColor(paint, null);
                 }
                 break;
 
             case ERASER:
-                if (is4Canvas) {
+                if (is4Canvas) {  // 绘制到画布上
                     paint.setShader(this.mBitmapShaderEraser4C);
-                } else {
-                    if (mBitmapShader == mBitmapShaderEraser) { // 图片的矩阵不需要任何偏移
+                } else {  // 绘制到图片中
+                    if (mBitmapShader == mBitmapShaderEraser) { // 图片的矩阵不需要任何偏移(涂鸦图片和底图是同一张)
                         mBitmapShaderEraser.setLocalMatrix(null);
                     }
                     paint.setShader(this.mBitmapShaderEraser);
@@ -846,18 +845,5 @@ public class EraserView extends View {
          * @param bitmapEraser 橡皮擦底图
          */
         void onSaved(Bitmap bitmap, Bitmap bitmapEraser);
-
-        /**
-         * 出错
-         *
-         * @param i
-         * @param msg
-         */
-        void onError(int i, String msg);
-
-        /**
-         * 准备工作已经完成
-         */
-        void onReady();
     }
 }
