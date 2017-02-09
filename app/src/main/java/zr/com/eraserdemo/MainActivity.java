@@ -87,7 +87,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     /**
      * 取列表中第一张图进行涂鸦
-     * @param newFiles
+     * @param newFiles 返回的图片列表
      */
     private void updateUI(ArrayList<String> newFiles) {
         mImagePath = newFiles.get(0).toString();

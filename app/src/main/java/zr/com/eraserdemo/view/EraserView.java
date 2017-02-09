@@ -33,6 +33,7 @@ public class EraserView extends View {
 
     private static final float VALUE = 1f;
 
+    /** 涂鸦板接口回调 */
     private GraffitiListener mGraffitiListener;
 
     /** 原图 */
@@ -41,7 +42,7 @@ public class EraserView extends View {
     private Bitmap mBitmapEraser;
     /** 原图 + 绘制path的合成图 */
     private Bitmap mGraffitiBitmap;
-    /** 图片的Canvas */
+    /** 图片的Canvas,用户涂鸦绘制 */
     private Canvas mBitmapCanvas;
 
     /** 图片适应屏幕时的缩放倍数 */
@@ -132,7 +133,7 @@ public class EraserView extends View {
             mBitmapEraser = ImageUtils.createBitmapFromPath(eraser, getContext());
         }
         mEraserImageIsResizeable = eraserImageIsResizeable;
-
+        // 判断移动的最小距离
         mTouchSlop = ViewConfiguration.get(context.getApplicationContext()).getScaledTouchSlop();
 
         init();
@@ -151,17 +152,18 @@ public class EraserView extends View {
         mPaint.setFilterBitmap(true);
         mPaint.setStrokeJoin(Paint.Join.ROUND);
         mPaint.setStrokeCap(Paint.Cap.ROUND);// 圆滑
-
+        // 默认为涂鸦状态
         mPen = Pen.HAND;
+        // 默认为手写方式
         mShape = Shape.HAND_WRITE;
 
-        this.mBitmapShader = new BitmapShader(this.mBitmap, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
-        this.mBitmapShader4C = new BitmapShader(this.mBitmap, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
+        this.mBitmapShader = new BitmapShader(this.mBitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+        this.mBitmapShader4C = new BitmapShader(this.mBitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
 
         // 若指定橡皮擦底图,则使用之;否则底图和原图为同一张
         if (mBitmapEraser != null) {
-            this.mBitmapShaderEraser = new BitmapShader(this.mBitmapEraser, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
-            this.mBitmapShaderEraser4C = new BitmapShader(this.mBitmapEraser, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
+            this.mBitmapShaderEraser = new BitmapShader(this.mBitmapEraser, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+            this.mBitmapShaderEraser4C = new BitmapShader(this.mBitmapEraser, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
         } else {
             this.mBitmapShaderEraser = mBitmapShader;
             this.mBitmapShaderEraser4C = mBitmapShader4C;
@@ -432,7 +434,7 @@ public class EraserView extends View {
         if (mBitmap.isRecycled() || mGraffitiBitmap.isRecycled()) {
             return;
         }
-        // canvas增加抗锯齿效果
+        // canvas增加抗锯齿效果,开启后很影响性能,慎用!!!
 //        canvas.setDrawFilter(new PaintFlagsDrawFilter(0, Paint.ANTI_ALIAS_FLAG|Paint.FILTER_BITMAP_FLAG));
 
         canvas.save();
@@ -520,7 +522,7 @@ public class EraserView extends View {
     }
 
     /**
-     * 设置画笔相关参数
+     * 设置画笔相关参数(绘制 or 橡皮擦)
      * @param pen
      * @param paint
      * @param is4Canvas
@@ -531,17 +533,17 @@ public class EraserView extends View {
         switch (pen) { // 设置画笔
             case HAND:
                 paint.setShader(null);
-                if (is4Canvas) {  // 绘制到画布上
+                if (is4Canvas) {  // 使用图片绘制
                     color.initColor(paint, mShaderMatrix4C);
-                } else { // 绘制到图片中
+                } else { // 普通绘制
                     color.initColor(paint, null);
                 }
                 break;
 
             case ERASER:
-                if (is4Canvas) {  // 绘制到画布上
+                if (is4Canvas) {  // 使用图片擦出(类似马赛克)
                     paint.setShader(this.mBitmapShaderEraser4C);
-                } else {  // 绘制到图片中
+                } else {  // 普通擦除
                     if (mBitmapShader == mBitmapShaderEraser) { // 图片的矩阵不需要任何偏移(涂鸦图片和底图是同一张)
                         mBitmapShaderEraser.setLocalMatrix(null);
                     }
@@ -609,24 +611,25 @@ public class EraserView extends View {
     }
 
     private void setMatrix() {
-        this.mShaderMatrix.set(null);
-        this.mBitmapShader.setLocalMatrix(this.mShaderMatrix);
+        // 原图view保持不变,因此无需设置matrix
+//        this.mShaderMatrix.set(null);
+//        this.mBitmapShader.setLocalMatrix(this.mShaderMatrix);
 
+        // 位置变动只是通过移动画布实现
         this.mShaderMatrix4C.set(null);
         this.mShaderMatrix4C.postTranslate((mCentreTranX + mTransX) / (mPrivateScale * mScale), (mCentreTranY + mTransY) / (mPrivateScale * mScale));
         this.mBitmapShader4C.setLocalMatrix(this.mShaderMatrix4C);
 
-        // 如果使用了自定义的橡皮擦底图，则需要跳转矩阵
-        if (mPen == Pen.ERASER && mBitmapShader != mBitmapShaderEraser) {
-            mMatrixTemp.reset();
-            // 缩放橡皮擦底图，使之与涂鸦图片大小一样
-            if (mEraserImageIsResizeable) {
-                mMatrixTemp.preScale(mBitmap.getWidth() * 1f / mBitmapEraser.getWidth(), mBitmap.getHeight() * 1f / mBitmapEraser.getHeight());
-            }
-            mBitmapShaderEraser.setLocalMatrix(mMatrixTemp);
-            mBitmapShaderEraser4C.setLocalMatrix(mMatrixTemp);
-
-        }
+//        // 如果使用了自定义的橡皮擦底图，则需要跳转矩阵
+//        if (mPen == Pen.ERASER && mBitmapShader != mBitmapShaderEraser) {
+//            mMatrixTemp.reset();
+//            // 缩放橡皮擦底图，使之与涂鸦图片大小一样
+//            if (mEraserImageIsResizeable) {
+//                mMatrixTemp.preScale(mBitmap.getWidth() * 1f / mBitmapEraser.getWidth(), mBitmap.getHeight() * 1f / mBitmapEraser.getHeight());
+//            }
+//            mBitmapShaderEraser.setLocalMatrix(mMatrixTemp);
+//            mBitmapShaderEraser4C.setLocalMatrix(mMatrixTemp);
+//        }
     }
 
     /**
@@ -748,6 +751,7 @@ public class EraserView extends View {
     public void setScale(float scale) {
         this.mScale = scale;
         judgePosition();
+        setMatrix();
         invalidate();
     }
 
@@ -765,6 +769,7 @@ public class EraserView extends View {
             throw new RuntimeException("Pen can't be null");
         }
         mPen = pen;
+        setMatrix();
         invalidate();
     }
 
@@ -777,6 +782,7 @@ public class EraserView extends View {
         mTransX = transX;
         mTransY = transY;
         judgePosition();
+        setMatrix();
         invalidate();
     }
 
