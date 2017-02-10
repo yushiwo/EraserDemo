@@ -41,6 +41,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Button mUndoButton;
     /** 恢复上一步操作 */
     private Button mReverseButton;
+    /** 旋转操作 */
+    private Button mRotateButton;
+    /** 保存操作 */
+    private Button mSaveButton;
 
     /** 涂鸦板view容器 */
     private FrameLayout mViewContainer;
@@ -66,6 +70,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mMoveButton = (Button)findViewById(R.id.btn_move);
         mUndoButton = (Button)findViewById(R.id.btn_undo);
         mReverseButton = (Button)findViewById(R.id.btn_reverse);
+        mRotateButton = (Button)findViewById(R.id.btn_rotate);
+        mSaveButton = (Button)findViewById(R.id.btn_save);
         mViewContainer = (FrameLayout)findViewById(R.id.layout_view_container);
     }
 
@@ -76,6 +82,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mMoveButton.setOnClickListener(this);
         mUndoButton.setOnClickListener(this);
         mReverseButton.setOnClickListener(this);
+        mRotateButton.setOnClickListener(this);
+        mSaveButton.setOnClickListener(this);
     }
 
     @Override
@@ -104,8 +112,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         mEraserView = new EraserView(this, mBitmap, new EraserView.GraffitiListener() {
             @Override
-            public void onSaved(Bitmap bitmap, Bitmap bitmapEraser) {
-
+            public void onSaved(Bitmap bitmap) {
+                System.out.println("获取涂鸦后的图片");
             }
         });
 
@@ -141,6 +149,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             case R.id.btn_reverse: // 反向撤销
                 mEraserView.reverse();
+                break;
+
+            case R.id.btn_rotate: // 旋转
+                mEraserView.rotate();
+                break;
+
+            case R.id.btn_save: // 保存
+                mEraserView.save();
                 break;
         }
     }

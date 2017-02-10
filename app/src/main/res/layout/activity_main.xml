@@ -53,11 +53,24 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/undo"/>
+
         <Button
             android:id="@+id/btn_reverse"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/reverse"/>
+
+        <Button
+            android:id="@+id/btn_rotate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/rotate"/>
+
+        <Button
+            android:id="@+id/btn_save"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/save"/>
 
     </LinearLayout>
 

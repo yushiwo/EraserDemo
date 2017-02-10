@@ -711,7 +711,7 @@ public class EraserView extends View {
      * 保存
      */
     public void save() {
-        mGraffitiListener.onSaved(mGraffitiBitmap, mBitmapEraser);
+        mGraffitiListener.onSaved(mGraffitiBitmap);
     }
 
     /**
@@ -747,6 +747,18 @@ public class EraserView extends View {
             draw(mBitmapCanvas, mPathStack, false);
             invalidate();
         }
+    }
+
+    /**
+     * 旋转
+     */
+    public void rotate() {
+        System.out.println("rotate");
+        // 位置变动只是通过移动画布实现
+        this.mShaderMatrix4C.set(null);
+        this.mShaderMatrix4C.setRotate(90);
+        this.mBitmapShader4C.setLocalMatrix(this.mShaderMatrix4C);
+        invalidate();
     }
 
     /**
@@ -906,8 +918,7 @@ public class EraserView extends View {
          * 保存图片
          *
          * @param bitmap       涂鸦后的图片
-         * @param bitmapEraser 橡皮擦底图
          */
-        void onSaved(Bitmap bitmap, Bitmap bitmapEraser);
+        void onSaved(Bitmap bitmap);
     }
 }
