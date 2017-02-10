@@ -93,6 +93,8 @@ public class EraserView extends View {
 
     /** 保存涂鸦操作，便于撤销 */
     private CopyOnWriteArrayList<GraffitiPath> mPathStack = new CopyOnWriteArrayList<GraffitiPath>();
+    /** 撤销时候缓存撤销步骤，反向撤销数据从此获取 */
+    private CopyOnWriteArrayList<GraffitiPath> mUndoCacheStack = new CopyOnWriteArrayList<GraffitiPath>();
 
     /** 笔的类型:手写 or 橡皮擦 */
     private Pen mPen;
@@ -228,7 +230,8 @@ public class EraserView extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-
+        // 开始操作画布，则清空撤销缓存，下次重新计数
+        mUndoCacheStack.clear();
         if (isMoving()) {
 
             switch (event.getAction() & MotionEvent.ACTION_MASK) {
@@ -673,7 +676,7 @@ public class EraserView extends View {
             if (mCentreTranX + mTransX + mBitmap.getWidth() * mPrivateScale * mScale > getWidth()) { // mScale<1是preview.width不用乘scale
                 mTransX = getWidth() - mBitmap.getWidth() * mPrivateScale * mScale - mCentreTranX;
                 changed = true;
-            } else if (mCentreTranX + mTransX < 0) {
+            } else if (mCentreTranX + mTransX < 0) {  // 图片左边界只能到canvas的左边
                 mTransX = -mCentreTranX;
                 changed = true;
             }
@@ -725,7 +728,21 @@ public class EraserView extends View {
      */
     public void undo() {
         if (mPathStack.size() > 0) {
+            mUndoCacheStack.add(mPathStack.get(mPathStack.size() - 1));
             mPathStack.remove(mPathStack.size() - 1);
+            initCanvas();
+            draw(mBitmapCanvas, mPathStack, false);
+            invalidate();
+        }
+    }
+
+    /**
+     * 反向撤销
+     */
+    public void reverse() {
+        if (mUndoCacheStack.size() > 0) {
+            mPathStack.add(mUndoCacheStack.get(mUndoCacheStack.size() - 1));
+            mUndoCacheStack.remove(mUndoCacheStack.size() - 1);
             initCanvas();
             draw(mBitmapCanvas, mPathStack, false);
             invalidate();

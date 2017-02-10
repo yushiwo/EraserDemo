@@ -39,6 +39,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Button mMoveButton;
     /** 撤销上一步操作 */
     private Button mUndoButton;
+    /** 恢复上一步操作 */
+    private Button mReverseButton;
 
     /** 涂鸦板view容器 */
     private FrameLayout mViewContainer;
@@ -63,6 +65,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mGetImageButton = (Button)findViewById(R.id.btn_get_image);
         mMoveButton = (Button)findViewById(R.id.btn_move);
         mUndoButton = (Button)findViewById(R.id.btn_undo);
+        mReverseButton = (Button)findViewById(R.id.btn_reverse);
         mViewContainer = (FrameLayout)findViewById(R.id.layout_view_container);
     }
 
@@ -72,6 +75,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mGetImageButton.setOnClickListener(this);
         mMoveButton.setOnClickListener(this);
         mUndoButton.setOnClickListener(this);
+        mReverseButton.setOnClickListener(this);
     }
 
     @Override
@@ -133,6 +137,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             case R.id.btn_undo: // 撤销
                 mEraserView.undo();
+                break;
+
+            case R.id.btn_reverse: // 反向撤销
+                mEraserView.reverse();
                 break;
         }
     }

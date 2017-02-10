@@ -6,4 +6,5 @@
     <string name="eraser">橡皮</string>
     <string name="move">移动</string>
     <string name="undo">撤销</string>
+    <string name="reverse">恢复</string>
 </resources>
