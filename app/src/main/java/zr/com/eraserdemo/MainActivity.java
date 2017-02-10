@@ -37,6 +37,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Button mGetImageButton;
     /** 移动图片 */
     private Button mMoveButton;
+    /** 撤销上一步操作 */
+    private Button mUndoButton;
 
     /** 涂鸦板view容器 */
     private FrameLayout mViewContainer;
@@ -60,6 +62,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mEraserButton = (Button)findViewById(R.id.btn_eraser);
         mGetImageButton = (Button)findViewById(R.id.btn_get_image);
         mMoveButton = (Button)findViewById(R.id.btn_move);
+        mUndoButton = (Button)findViewById(R.id.btn_undo);
         mViewContainer = (FrameLayout)findViewById(R.id.layout_view_container);
     }
 
@@ -68,6 +71,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mEraserButton.setOnClickListener(this);
         mGetImageButton.setOnClickListener(this);
         mMoveButton.setOnClickListener(this);
+        mUndoButton.setOnClickListener(this);
     }
 
     @Override
@@ -125,6 +129,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             case R.id.btn_get_image: // 选取图片
                 ImageSelector.getInstance().launchSelector(this, mCurrentImageList);
+                break;
+
+            case R.id.btn_undo: // 撤销
+                mEraserView.undo();
                 break;
         }
     }

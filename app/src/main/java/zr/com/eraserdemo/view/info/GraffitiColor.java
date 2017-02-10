@@ -47,8 +47,10 @@ public class GraffitiColor {
      */
     public void initColor(Paint paint, Matrix matrix) {
         if (mType == GraffitiColor.Type.COLOR) {
+            System.out.println("init color 111");
             paint.setColor(mColor);
         } else if (mType == GraffitiColor.Type.BITMAP) {
+            System.out.println("init color 222");
             BitmapShader shader = new BitmapShader(mBitmap, mTileX, mTileY);
             shader.setLocalMatrix(matrix);
             paint.setShader(shader);

@@ -5,4 +5,5 @@
     <string name="write">书写</string>
     <string name="eraser">橡皮</string>
     <string name="move">移动</string>
+    <string name="undo">撤销</string>
 </resources>

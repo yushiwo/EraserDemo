@@ -7,7 +7,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
-import android.graphics.PaintFlagsDrawFilter;
 import android.graphics.Path;
 import android.graphics.Shader;
 import android.os.Build;
@@ -15,6 +14,8 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
+
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import zr.com.eraserdemo.util.ImageUtils;
 import zr.com.eraserdemo.view.info.GraffitiColor;
@@ -25,6 +26,7 @@ import zr.com.eraserdemo.view.info.Shape;
 
 /**
  * modified by zhengrui
+ * 作者文章:http://cdnnn.07net01.com/program/2016/10/1689006.html
  */
 public class EraserView extends View {
 
@@ -88,6 +90,9 @@ public class EraserView extends View {
     private boolean mIsDrawableOutside = false;
     /** 橡皮擦底图是否调整大小，如果可以则调整到跟当前涂鸦图片一样的大小 */
     private boolean mEraserImageIsResizeable;
+
+    /** 保存涂鸦操作，便于撤销 */
+    private CopyOnWriteArrayList<GraffitiPath> mPathStack = new CopyOnWriteArrayList<GraffitiPath>();
 
     /** 笔的类型:手写 or 橡皮擦 */
     private Pen mPen;
@@ -322,6 +327,7 @@ public class EraserView extends View {
                             toX((mTouchX + mLastTouchX) / 2),
                             toY((mTouchY + mLastTouchY) / 2));
                     path = GraffitiPath.toPath(mPen, mShape, mPaintSize, mColor.copy(), mCurrPath, null);
+                    mPathStack.add(path);
                     draw(mBitmapCanvas, path, false); // 保存到图片中
                     mIsPainting = false;  // 设置为false,将最后一笔保存在图片中,然后在ondraw中不去绘制
                 }
@@ -461,7 +467,7 @@ public class EraserView extends View {
             return;
         }
 
-        // 绘制涂鸦
+        // 绘制历史涂鸦
         canvas.drawBitmap(mGraffitiBitmap, left, top, null);
 
         // 最新的一笔,先画在画布上,提笔的时候保存为新的mGraffitiBitmap
@@ -487,6 +493,19 @@ public class EraserView extends View {
             }
         }
 
+    }
+
+    /**
+     * 将所有路径绘制到图片上
+     * @param canvas
+     * @param pathStack
+     * @param is4Canvas
+     */
+    private void draw(Canvas canvas, CopyOnWriteArrayList<GraffitiPath> pathStack, boolean is4Canvas) {
+        // 还原堆栈中的记录的操作
+        for (GraffitiPath path : pathStack) {
+            draw(canvas, path, is4Canvas);
+        }
     }
 
     /**
@@ -533,17 +552,22 @@ public class EraserView extends View {
         switch (pen) { // 设置画笔
             case HAND:
                 paint.setShader(null);
-                if (is4Canvas) {  // 使用图片绘制
-                    color.initColor(paint, mShaderMatrix4C);
-                } else { // 普通绘制
-                    color.initColor(paint, null);
-                }
+//                if (is4Canvas) {  // 使用图片绘制
+//                    System.out.println("111");
+//                    color.initColor(paint, mShaderMatrix4C);
+//                } else { // 普通绘制
+//                    System.out.println("222");
+//                    color.initColor(paint, null);
+//                }
+
+                // 直接调用此接口(是否使用bitmap作为画笔,在GraffitiColor中可通过PenType区分)
+                color.initColor(paint, mShaderMatrix4C);
                 break;
 
             case ERASER:
-                if (is4Canvas) {  // 使用图片擦出(类似马赛克)
+                if (is4Canvas) {  // 绘制到canvas
                     paint.setShader(this.mBitmapShaderEraser4C);
-                } else {  // 普通擦除
+                } else {  // 绘制到原图片
                     if (mBitmapShader == mBitmapShaderEraser) { // 图片的矩阵不需要任何偏移(涂鸦图片和底图是同一张)
                         mBitmapShaderEraser.setLocalMatrix(null);
                     }
@@ -691,8 +715,28 @@ public class EraserView extends View {
      * 清屏
      */
     public void clear() {
+        mPathStack.clear();
         initCanvas();
         invalidate();
+    }
+
+    /**
+     * 撤销
+     */
+    public void undo() {
+        if (mPathStack.size() > 0) {
+            mPathStack.remove(mPathStack.size() - 1);
+            initCanvas();
+            draw(mBitmapCanvas, mPathStack, false);
+            invalidate();
+        }
+    }
+
+    /**
+     * 是否有修改
+     */
+    public boolean isModified() {
+        return mPathStack.size() != 0;
     }
 
 
