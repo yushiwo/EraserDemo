@@ -106,9 +106,11 @@ public class EraserView extends View {
     private Matrix mShaderMatrix4C;
     private Matrix mMatrixTemp;
 
+    private Context context;
+
 
     public EraserView(Context context, Bitmap bitmap, GraffitiListener listener) {
-        this(context, bitmap, null, true, listener);
+        this(context, bitmap, true, listener);
     }
 
     /**
@@ -119,8 +121,10 @@ public class EraserView extends View {
      * @param listener
      * @
      */
-    public EraserView(Context context, Bitmap bitmap, String eraser, boolean eraserImageIsResizeable, GraffitiListener listener) {
+    public EraserView(Context context, Bitmap bitmap, boolean eraserImageIsResizeable, GraffitiListener listener) {
         super(context);
+
+        this.context = context;
 
         // 关闭硬件加速，因为bitmap的Canvas不支持硬件加速
         if (Build.VERSION.SDK_INT >= 11) {
@@ -136,9 +140,6 @@ public class EraserView extends View {
             throw new RuntimeException("Bitmap is null!!!");
         }
 
-        if (eraser != null) {
-            mBitmapEraser = ImageUtils.createBitmapFromPath(eraser, getContext());
-        }
         mEraserImageIsResizeable = eraserImageIsResizeable;
         // 判断移动的最小距离
         mTouchSlop = ViewConfiguration.get(context.getApplicationContext()).getScaledTouchSlop();
@@ -753,11 +754,17 @@ public class EraserView extends View {
      * 旋转
      */
     public void rotate() {
-        System.out.println("rotate");
-        // 位置变动只是通过移动画布实现
-        this.mShaderMatrix4C.set(null);
-        this.mShaderMatrix4C.setRotate(90);
-        this.mBitmapShader4C.setLocalMatrix(this.mShaderMatrix4C);
+        mBitmap = ImageUtils.rotate(context, mGraffitiBitmap, 90, true);
+        // 等比例缩放
+        setBG();
+        // 居中
+        centrePic();
+        // 初始化
+        init();
+        // 生成一张新图，旋转之前的笔画不能清除
+        mPathStack.clear();
+        mUndoCacheStack.clear();
+        // 刷新
         invalidate();
     }
 

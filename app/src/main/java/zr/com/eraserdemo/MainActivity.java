@@ -116,7 +116,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 System.out.println("获取涂鸦后的图片");
             }
         });
-
+        mViewContainer.removeAllViews();
         mViewContainer.addView(mEraserView, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
     }
 
