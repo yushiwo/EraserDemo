@@ -39,7 +39,7 @@ public class EraserView extends View {
     private GraffitiListener mGraffitiListener;
 
     /** 原图 */
-    private Bitmap mBitmap;
+    private Bitmap mBitmap, mOriginBitmap;
     /** 橡皮擦底图(一般都是原图) */
     private Bitmap mBitmapEraser;
     /** 原图 + 绘制path的合成图 */
@@ -106,6 +106,9 @@ public class EraserView extends View {
     private Matrix mShaderMatrix4C;
     private Matrix mMatrixTemp;
 
+    /** 默认图片角度为0 */
+    private int currentDegree = 0;
+
     private Context context;
 
 
@@ -132,6 +135,7 @@ public class EraserView extends View {
         }
 
         mBitmap = bitmap;
+        mOriginBitmap = bitmap;
         mGraffitiListener = listener;
         if (mGraffitiListener == null) {
             throw new RuntimeException("GraffitiListener is null!!!");
@@ -639,7 +643,7 @@ public class EraserView extends View {
     }
 
     private void setMatrix() {
-        // 原图view保持不变,因此无需设置matrix
+//        // 原图view保持不变,因此无需设置matrix
 //        this.mShaderMatrix.set(null);
 //        this.mBitmapShader.setLocalMatrix(this.mShaderMatrix);
 
@@ -648,16 +652,16 @@ public class EraserView extends View {
         this.mShaderMatrix4C.postTranslate((mCentreTranX + mTransX) / (mPrivateScale * mScale), (mCentreTranY + mTransY) / (mPrivateScale * mScale));
         this.mBitmapShader4C.setLocalMatrix(this.mShaderMatrix4C);
 
-//        // 如果使用了自定义的橡皮擦底图，则需要跳转矩阵
-//        if (mPen == Pen.ERASER && mBitmapShader != mBitmapShaderEraser) {
-//            mMatrixTemp.reset();
-//            // 缩放橡皮擦底图，使之与涂鸦图片大小一样
-//            if (mEraserImageIsResizeable) {
-//                mMatrixTemp.preScale(mBitmap.getWidth() * 1f / mBitmapEraser.getWidth(), mBitmap.getHeight() * 1f / mBitmapEraser.getHeight());
-//            }
-//            mBitmapShaderEraser.setLocalMatrix(mMatrixTemp);
-//            mBitmapShaderEraser4C.setLocalMatrix(mMatrixTemp);
-//        }
+        // 如果使用了自定义的橡皮擦底图，则需要跳转矩阵
+        if (mPen == Pen.ERASER && mBitmapShader != mBitmapShaderEraser) {
+            mMatrixTemp.reset();
+            // 缩放橡皮擦底图，使之与涂鸦图片大小一样
+            if (mEraserImageIsResizeable) {
+                mMatrixTemp.preScale(mBitmap.getWidth() * 1f / mBitmapEraser.getWidth(), mBitmap.getHeight() * 1f / mBitmapEraser.getHeight());
+            }
+            mBitmapShaderEraser.setLocalMatrix(mMatrixTemp);
+            mBitmapShaderEraser4C.setLocalMatrix(mMatrixTemp);
+        }
     }
 
     /**
@@ -720,6 +724,7 @@ public class EraserView extends View {
      */
     public void clear() {
         mPathStack.clear();
+        mUndoCacheStack.clear();
         initCanvas();
         invalidate();
     }
@@ -754,18 +759,21 @@ public class EraserView extends View {
      * 旋转
      */
     public void rotate() {
+        currentDegree = (currentDegree + 90) % 360;
+
+//        mBitmapEraser = ImageUtils.rotate(context, mOriginBitmap, currentDegree, false);
+        // 将涂鸦后的图作为原图显示
         mBitmap = ImageUtils.rotate(context, mGraffitiBitmap, 90, true);
         // 等比例缩放
         setBG();
-        // 居中
-        centrePic();
         // 初始化
         init();
         // 生成一张新图，旋转之前的笔画不能清除
         mPathStack.clear();
         mUndoCacheStack.clear();
         // 刷新
-        invalidate();
+        // 居中
+        centrePic();
     }
 
     /**

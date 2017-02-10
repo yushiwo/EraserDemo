@@ -9,4 +9,5 @@
     <string name="reverse">恢复</string>
     <string name="rotate">旋转</string>
     <string name="save">保存</string>
+    <string name="clear">清空</string>
 </resources>

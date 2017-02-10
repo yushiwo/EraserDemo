@@ -45,6 +45,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Button mRotateButton;
     /** 保存操作 */
     private Button mSaveButton;
+    /** 清空操作 */
+    private Button mClearButton;
 
     /** 涂鸦板view容器 */
     private FrameLayout mViewContainer;
@@ -72,6 +74,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mReverseButton = (Button)findViewById(R.id.btn_reverse);
         mRotateButton = (Button)findViewById(R.id.btn_rotate);
         mSaveButton = (Button)findViewById(R.id.btn_save);
+        mClearButton = (Button)findViewById(R.id.btn_clear);
         mViewContainer = (FrameLayout)findViewById(R.id.layout_view_container);
     }
 
@@ -84,6 +87,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mReverseButton.setOnClickListener(this);
         mRotateButton.setOnClickListener(this);
         mSaveButton.setOnClickListener(this);
+        mClearButton.setOnClickListener(this);
     }
 
     @Override
@@ -157,6 +161,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             case R.id.btn_save: // 保存
                 mEraserView.save();
+                break;
+
+            case R.id.btn_clear: // 保存
+                mEraserView.clear();
                 break;
         }
     }
