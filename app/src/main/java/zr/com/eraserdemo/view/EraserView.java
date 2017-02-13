@@ -460,6 +460,8 @@ public class EraserView extends View {
 //        canvas.setDrawFilter(new PaintFlagsDrawFilter(0, Paint.ANTI_ALIAS_FLAG|Paint.FILTER_BITMAP_FLAG));
 
         canvas.save();
+        // 根据旋转角度旋转canvas
+        canvas.rotate(currentDegree, canvas.getWidth()/2.0f, canvas.getHeight()/2.0f);
         doDraw(canvas);
         canvas.restore();
 
@@ -471,7 +473,7 @@ public class EraserView extends View {
      */
     private void doDraw(Canvas canvas) {
         System.out.println("do draw");
-        canvas.scale(mPrivateScale * mScale, mPrivateScale * mScale); // 缩放画布，接下来的操作要进行坐标换算
+        canvas.scale(mPrivateScale * mScale, mPrivateScale * mScale); // 缩放画布，接下来的操作要进行坐标换算（对应缩放功能）
         float left = (mCentreTranX + mTransX) / (mPrivateScale * mScale);
         float top = (mCentreTranY + mTransY) / (mPrivateScale * mScale);
 
@@ -538,24 +540,15 @@ public class EraserView extends View {
     private void draw(Canvas canvas, Pen pen, Paint paint, Path path, Matrix matrix, boolean is4Canvas, GraffitiColor color, int degree) {
         resetPaint(pen, paint, is4Canvas, matrix, color);
         paint.setStyle(Paint.Style.STROKE);
-        canvas.save();
-//        if(currentDegree == 90 || currentDegree == 270){  // 当前横屏
-//            if(degree == 0 || degree == 180){
-//                canvas.scale((float) w1/w2, (float) w1/w2);
-//            }else {
-//                canvas.scale(1, 1);
-//            }
-//        }else {
-//            if(degree == 0 || degree == 180){
-//                canvas.scale(1, 1);
-//            }else {
-//                canvas.scale((float) w2/w1, (float) w2/w1);
-//            }
-//        }
+        if(mIsPainting){  // 如果是绘制的，则不需要旋转canvas，在原来canvas上绘制即可，但是需要根据角度进行左边变换
+            canvas.drawPath(path, paint);
+        }else {
+            canvas.save();
+            canvas.rotate(degree, canvas.getWidth() / 2.0f, canvas.getHeight() / 2.0f);
+            canvas.drawPath(path, paint);
+            canvas.restore();
+        }
 
-        canvas.rotate(currentDegree - degree, canvas.getWidth()/2.0f, canvas.getHeight()/2.0f);
-        canvas.drawPath(path, paint);
-        canvas.restore();
     }
 
 
@@ -648,6 +641,14 @@ public class EraserView extends View {
      */
     public final float toX4C(float x) {
         return (x) / (mPrivateScale * mScale);
+
+//        float originX = (x) / (mPrivateScale * mScale);
+//         if(currentDegree == 180){
+//             return -originX;
+//         }else{
+//             return originX;
+//         }
+
     }
 
     /**
@@ -655,6 +656,13 @@ public class EraserView extends View {
      */
     public final float toY4C(float y) {
         return (y) / (mPrivateScale * mScale);
+
+//        float originY = (y) / (mPrivateScale * mScale);
+//        if(currentDegree == 180){
+//            return -originY;
+//        }else{
+//            return originY;
+//        }
     }
 
     /**
@@ -787,22 +795,24 @@ public class EraserView extends View {
     public void rotate() {
         currentDegree = (currentDegree + 90) % 360;
 
-//        mBitmapEraser = ImageUtils.rotate(context, mOriginBitmap, currentDegree, false);
-        // 将涂鸦后的图作为原图显示
-        mBitmap = ImageUtils.rotate(context, mBitmap, 90, true);
-        mGraffitiBitmap = ImageUtils.rotate(context, mGraffitiBitmap, 90, true);
-        // 等比例缩放
-        setBG();
-        // 初始化
-        init();
-        // 生成一张新图，旋转之前的笔画不能清除
-//        mPathStack.clear();
-//        mUndoCacheStack.clear();
-        // 刷新
-        // 居中
-        centrePic();
-        // 绘制path
-        draw(mBitmapCanvas, mPathStack, false);
+        invalidate();
+//
+////        mBitmapEraser = ImageUtils.rotate(context, mOriginBitmap, currentDegree, false);
+//        // 将涂鸦后的图作为原图显示
+//        mBitmap = ImageUtils.rotate(context, mBitmap, 90, true);
+//        mGraffitiBitmap = ImageUtils.rotate(context, mGraffitiBitmap, 90, true);
+//        // 等比例缩放
+//        setBG();
+//        // 初始化
+//        init();
+//        // 生成一张新图，旋转之前的笔画不能清除
+////        mPathStack.clear();
+////        mUndoCacheStack.clear();
+//        // 刷新
+//        // 居中
+//        centrePic();
+//        // 绘制path
+//        draw(mBitmapCanvas, mPathStack, false);
 
     }
 

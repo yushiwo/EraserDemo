@@ -87,6 +87,11 @@
     </LinearLayout>
 
 
+    <!--<FrameLayout-->
+        <!--android:id="@+id/layout_view_container"-->
+        <!--android:layout_width="300dp"-->
+        <!--android:layout_height="300dp">-->
+
     <FrameLayout
         android:id="@+id/layout_view_container"
         android:layout_weight="1"
