@@ -17,9 +17,10 @@ public class GraffitiPath {
     public float mSx, mSy; // 映射后的起始坐标，（手指点击）
     public float mDx, mDy; // 映射后的终止坐标，（手指抬起）
     public Matrix mMatrix; //　仿制图片的偏移矩阵
+    public int degree; // path对应canvas的旋转角度
 
     public static GraffitiPath toShape(Pen pen, Shape shape, float width, GraffitiColor color,
-                                       float sx, float sy, float dx, float dy, Matrix matrix) {
+                                       float sx, float sy, float dx, float dy, Matrix matrix, int degree) {
         GraffitiPath path = new GraffitiPath();
         path.mPen = pen;
         path.mShape = shape;
@@ -30,10 +31,11 @@ public class GraffitiPath {
         path.mDx = dx;
         path.mDy = dy;
         path.mMatrix = matrix;
+        path.degree = degree;
         return path;
     }
 
-    public static GraffitiPath toPath(Pen pen, Shape shape, float width, GraffitiColor color, Path p, Matrix matrix) {
+    public static GraffitiPath toPath(Pen pen, Shape shape, float width, GraffitiColor color, Path p, Matrix matrix, int degree) {
         GraffitiPath path = new GraffitiPath();
         path.mPen = pen;
         path.mShape = shape;
@@ -41,6 +43,7 @@ public class GraffitiPath {
         path.mColor = color;
         path.mPath = p;
         path.mMatrix = matrix;
+        path.degree = degree;
         return path;
     }
 }

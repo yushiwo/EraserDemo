@@ -334,7 +334,7 @@ public class EraserView extends View {
                             toY(mLastTouchY),
                             toX((mTouchX + mLastTouchX) / 2),
                             toY((mTouchY + mLastTouchY) / 2));
-                    path = GraffitiPath.toPath(mPen, mShape, mPaintSize, mColor.copy(), mCurrPath, null);
+                    path = GraffitiPath.toPath(mPen, mShape, mPaintSize, mColor.copy(), mCurrPath, null, currentDegree);
                     mPathStack.add(path);
                     draw(mBitmapCanvas, path, false); // 保存到图片中
                     mIsPainting = false;  // 设置为false,将最后一笔保存在图片中,然后在ondraw中不去绘制
@@ -418,6 +418,8 @@ public class EraserView extends View {
     }
 
 
+    private int w1;
+    private int w2;
     private void setBG() {// 不用resize preview
         // 等比例缩放图片适应view的大小
         int w = mBitmap.getWidth();
@@ -439,6 +441,12 @@ public class EraserView extends View {
 
         initCanvas();
         setMatrix();
+
+        if(currentDegree % 180 != 0){ // 横
+            w2 = mPrivateWidth;
+        }else {
+            w1 = mPrivateWidth;
+        }
 
         invalidate();
     }
@@ -462,6 +470,7 @@ public class EraserView extends View {
      * @param canvas
      */
     private void doDraw(Canvas canvas) {
+        System.out.println("do draw");
         canvas.scale(mPrivateScale * mScale, mPrivateScale * mScale); // 缩放画布，接下来的操作要进行坐标换算
         float left = (mCentreTranX + mTransX) / (mPrivateScale * mScale);
         float top = (mCentreTranY + mTransY) / (mPrivateScale * mScale);
@@ -497,7 +506,7 @@ public class EraserView extends View {
             // 画触摸的路径
             mPaint.setStrokeWidth(mPaintSize);
             if (mShape == Shape.HAND_WRITE) { // 手写,绘制到画布上,isCanvas为true
-                draw(canvas, mPen, mPaint, path, null, true, mColor);
+                draw(canvas, mPen, mPaint, path, null, true, mColor, currentDegree);
             }
         }
 
@@ -526,10 +535,27 @@ public class EraserView extends View {
      * @param is4Canvas
      * @param color
      */
-    private void draw(Canvas canvas, Pen pen, Paint paint, Path path, Matrix matrix, boolean is4Canvas, GraffitiColor color) {
+    private void draw(Canvas canvas, Pen pen, Paint paint, Path path, Matrix matrix, boolean is4Canvas, GraffitiColor color, int degree) {
         resetPaint(pen, paint, is4Canvas, matrix, color);
         paint.setStyle(Paint.Style.STROKE);
+        canvas.save();
+//        if(currentDegree == 90 || currentDegree == 270){  // 当前横屏
+//            if(degree == 0 || degree == 180){
+//                canvas.scale((float) w1/w2, (float) w1/w2);
+//            }else {
+//                canvas.scale(1, 1);
+//            }
+//        }else {
+//            if(degree == 0 || degree == 180){
+//                canvas.scale(1, 1);
+//            }else {
+//                canvas.scale((float) w2/w1, (float) w2/w1);
+//            }
+//        }
+
+        canvas.rotate(currentDegree - degree, canvas.getWidth()/2.0f, canvas.getHeight()/2.0f);
         canvas.drawPath(path, paint);
+        canvas.restore();
     }
 
 
@@ -544,7 +570,7 @@ public class EraserView extends View {
         mPaint.setAntiAlias(true);
         mPaint.setFilterBitmap(true);
         if (path.mShape == Shape.HAND_WRITE) { // 手写,绘制到图片上,isCanvas为false
-            draw(canvas, path.mPen, mPaint, path.mPath, path.mMatrix, is4Canvas, path.mColor);
+            draw(canvas, path.mPen, mPaint, path.mPath, path.mMatrix, is4Canvas, path.mColor, path.degree);
         }
     }
 
@@ -763,17 +789,21 @@ public class EraserView extends View {
 
 //        mBitmapEraser = ImageUtils.rotate(context, mOriginBitmap, currentDegree, false);
         // 将涂鸦后的图作为原图显示
-        mBitmap = ImageUtils.rotate(context, mGraffitiBitmap, 90, true);
+        mBitmap = ImageUtils.rotate(context, mBitmap, 90, true);
+        mGraffitiBitmap = ImageUtils.rotate(context, mGraffitiBitmap, 90, true);
         // 等比例缩放
         setBG();
         // 初始化
         init();
         // 生成一张新图，旋转之前的笔画不能清除
-        mPathStack.clear();
-        mUndoCacheStack.clear();
+//        mPathStack.clear();
+//        mUndoCacheStack.clear();
         // 刷新
         // 居中
         centrePic();
+        // 绘制path
+        draw(mBitmapCanvas, mPathStack, false);
+
     }
 
     /**
