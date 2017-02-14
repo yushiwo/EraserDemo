@@ -174,6 +174,7 @@ public class EraserView extends View {
 
         // 若指定橡皮擦底图,则使用之;否则底图和原图为同一张
         if (mBitmapEraser != null) {
+            Log.d("init", "has bitmap eraser");
             this.mBitmapShaderEraser = new BitmapShader(this.mBitmapEraser, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
             this.mBitmapShaderEraser4C = new BitmapShader(this.mBitmapEraser, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
         } else {
@@ -418,8 +419,6 @@ public class EraserView extends View {
     }
 
 
-    private int w1;
-    private int w2;
     private void setBG() {// 不用resize preview
         // 等比例缩放图片适应view的大小
         int w = mBitmap.getWidth();
@@ -441,27 +440,20 @@ public class EraserView extends View {
 
         initCanvas();
         setMatrix();
-
-        if(currentDegree % 180 != 0){ // 横
-            w2 = mPrivateWidth;
-        }else {
-            w1 = mPrivateWidth;
-        }
-
         invalidate();
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
+        Log.d("onDraw", "111");
         if (mBitmap.isRecycled() || mGraffitiBitmap.isRecycled()) {
+            Log.d("onDraw", "222");
             return;
         }
         // canvas增加抗锯齿效果,开启后很影响性能,慎用!!!
 //        canvas.setDrawFilter(new PaintFlagsDrawFilter(0, Paint.ANTI_ALIAS_FLAG|Paint.FILTER_BITMAP_FLAG));
 
         canvas.save();
-        // 根据旋转角度旋转canvas
-        canvas.rotate(currentDegree, canvas.getWidth()/2.0f, canvas.getHeight()/2.0f);
         doDraw(canvas);
         canvas.restore();
 
@@ -540,14 +532,39 @@ public class EraserView extends View {
     private void draw(Canvas canvas, Pen pen, Paint paint, Path path, Matrix matrix, boolean is4Canvas, GraffitiColor color, int degree) {
         resetPaint(pen, paint, is4Canvas, matrix, color);
         paint.setStyle(Paint.Style.STROKE);
-        if(mIsPainting){  // 如果是绘制的，则不需要旋转canvas，在原来canvas上绘制即可，但是需要根据角度进行左边变换
-            canvas.drawPath(path, paint);
-        }else {
-            canvas.save();
-            canvas.rotate(degree, canvas.getWidth() / 2.0f, canvas.getHeight() / 2.0f);
-            canvas.drawPath(path, paint);
-            canvas.restore();
-        }
+//        if(mIsPainting){  // 如果是绘制的，则不需要旋转canvas，在原来canvas上绘制即可，但是需要根据角度进行左边变换
+//            canvas.drawPath(path, paint);
+//        }else {
+//            canvas.save();
+//            canvas.rotate(degree, canvas.getWidth() / 2.0f, canvas.getHeight() / 2.0f);
+//            canvas.drawPath(path, paint);
+//            canvas.restore();
+//        }
+
+        canvas.drawPath(path, paint);
+
+//        if(currentDegree == degree){
+//            Log.d("onDraw", "aaa");
+//            canvas.drawPath(path, paint);
+//        }else {
+//            // TODO: 2017/2/13 先旋转图片，然后开始绘制
+//            // 将涂鸦后的图作为原图显示
+//            // 旋转涂鸦图片
+//            mBitmap = ImageUtils.rotate(context, mGraffitiBitmap, degree - currentDegree, true);
+//            currentDegree = degree;
+//            mBitmapEraser = ImageUtils.rotate(context, mOriginBitmap, currentDegree, false);
+//
+//            // 初始化
+//            init();
+//            // 等比例缩放
+//            setBG();
+//            // 居中
+//            centrePic();
+//
+//            Log.d("onDraw", "000");
+//
+//            canvas.drawPath(path, paint);
+//        }
 
     }
 
@@ -641,14 +658,6 @@ public class EraserView extends View {
      */
     public final float toX4C(float x) {
         return (x) / (mPrivateScale * mScale);
-
-//        float originX = (x) / (mPrivateScale * mScale);
-//         if(currentDegree == 180){
-//             return -originX;
-//         }else{
-//             return originX;
-//         }
-
     }
 
     /**
@@ -656,13 +665,6 @@ public class EraserView extends View {
      */
     public final float toY4C(float y) {
         return (y) / (mPrivateScale * mScale);
-
-//        float originY = (y) / (mPrivateScale * mScale);
-//        if(currentDegree == 180){
-//            return -originY;
-//        }else{
-//            return originY;
-//        }
     }
 
     /**
@@ -686,14 +688,36 @@ public class EraserView extends View {
         this.mShaderMatrix4C.postTranslate((mCentreTranX + mTransX) / (mPrivateScale * mScale), (mCentreTranY + mTransY) / (mPrivateScale * mScale));
         this.mBitmapShader4C.setLocalMatrix(this.mShaderMatrix4C);
 
+//        // 如果使用了自定义的橡皮擦底图，则需要跳转矩阵
+//        if (mPen == Pen.ERASER && mBitmapShader != mBitmapShaderEraser) {
+//            Log.d("setMatrix", "橡皮擦地图和原图不一样");
+//            mMatrixTemp.reset();
+//            // 缩放橡皮擦底图，使之与涂鸦图片大小一样
+//            if (mEraserImageIsResizeable) {
+//                mMatrixTemp.preScale(mBitmap.getWidth() * 1f / mBitmapEraser.getWidth(), mBitmap.getHeight() * 1f / mBitmapEraser.getHeight());
+//            }
+//            mBitmapShaderEraser.setLocalMatrix(mMatrixTemp);
+//            mBitmapShaderEraser4C.setLocalMatrix(mMatrixTemp);
+//        }
+
         // 如果使用了自定义的橡皮擦底图，则需要跳转矩阵
         if (mPen == Pen.ERASER && mBitmapShader != mBitmapShaderEraser) {
             mMatrixTemp.reset();
+            mBitmapShaderEraser.getLocalMatrix(mMatrixTemp);
+            mBitmapShader.getLocalMatrix(mMatrixTemp);
             // 缩放橡皮擦底图，使之与涂鸦图片大小一样
             if (mEraserImageIsResizeable) {
                 mMatrixTemp.preScale(mBitmap.getWidth() * 1f / mBitmapEraser.getWidth(), mBitmap.getHeight() * 1f / mBitmapEraser.getHeight());
             }
             mBitmapShaderEraser.setLocalMatrix(mMatrixTemp);
+
+            mMatrixTemp.reset();
+            mBitmapShaderEraser4C.getLocalMatrix(mMatrixTemp);
+            mBitmapShader4C.getLocalMatrix(mMatrixTemp);
+            // 缩放橡皮擦底图，使之与涂鸦图片大小一样
+            if (mEraserImageIsResizeable) {
+                mMatrixTemp.preScale(mBitmap.getWidth() * 1f / mBitmapEraser.getWidth(), mBitmap.getHeight() * 1f / mBitmapEraser.getHeight());
+            }
             mBitmapShaderEraser4C.setLocalMatrix(mMatrixTemp);
         }
     }
@@ -757,10 +781,17 @@ public class EraserView extends View {
      * 清屏
      */
     public void clear() {
+        mBitmap = mOriginBitmap;
+        mBitmapEraser = null;
+        currentDegree = 0;
+        // 初始化
+        init();
+        // 等比例缩放
+        setBG();
+        // 居中
+        centrePic();
         mPathStack.clear();
         mUndoCacheStack.clear();
-        initCanvas();
-        invalidate();
     }
 
     /**
@@ -768,6 +799,17 @@ public class EraserView extends View {
      */
     public void undo() {
         if (mPathStack.size() > 0) {
+
+//            mBitmap = mOriginBitmap;
+//            mBitmapEraser = null;
+//            currentDegree = 0;
+//            // 初始化
+//            init();
+//            // 等比例缩放
+//            setBG();
+//            // 居中
+//            centrePic();
+
             mUndoCacheStack.add(mPathStack.get(mPathStack.size() - 1));
             mPathStack.remove(mPathStack.size() - 1);
             initCanvas();
@@ -781,6 +823,17 @@ public class EraserView extends View {
      */
     public void reverse() {
         if (mUndoCacheStack.size() > 0) {
+
+//            mBitmap = mOriginBitmap;
+//            mBitmapEraser = null;
+//            currentDegree = 0;
+//            // 初始化
+//            init();
+//            // 等比例缩放
+//            setBG();
+//            // 居中
+//            centrePic();
+
             mPathStack.add(mUndoCacheStack.get(mUndoCacheStack.size() - 1));
             mUndoCacheStack.remove(mUndoCacheStack.size() - 1);
             initCanvas();
@@ -795,24 +848,20 @@ public class EraserView extends View {
     public void rotate() {
         currentDegree = (currentDegree + 90) % 360;
 
-        invalidate();
-//
-////        mBitmapEraser = ImageUtils.rotate(context, mOriginBitmap, currentDegree, false);
-//        // 将涂鸦后的图作为原图显示
-//        mBitmap = ImageUtils.rotate(context, mBitmap, 90, true);
-//        mGraffitiBitmap = ImageUtils.rotate(context, mGraffitiBitmap, 90, true);
-//        // 等比例缩放
-//        setBG();
-//        // 初始化
-//        init();
-//        // 生成一张新图，旋转之前的笔画不能清除
-////        mPathStack.clear();
-////        mUndoCacheStack.clear();
-//        // 刷新
-//        // 居中
-//        centrePic();
-//        // 绘制path
-//        draw(mBitmapCanvas, mPathStack, false);
+        mBitmapEraser = ImageUtils.rotate(context, mOriginBitmap, currentDegree, false);
+        // 将涂鸦后的图作为原图显示
+        mBitmap = ImageUtils.rotate(context, mGraffitiBitmap, 90, true);
+
+        Log.d("rotate", "mBitmap == " + mBitmap.getWidth() + ":" + mBitmap.getHeight());
+        // 初始化
+        init();
+        // 等比例缩放
+        setBG();
+        // 居中
+        centrePic();
+        // 生成一张新图，旋转之前的笔画不能清除
+        mPathStack.clear();
+        mUndoCacheStack.clear();
 
     }
 
